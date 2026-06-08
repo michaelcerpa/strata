@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strata - intake parser concept (Forward Deployed case study)</title>
+<meta name="description" content="Strata - a concept mockup. A parser turns any message into a structured row, scores every field, and flags the doubtful ones for a human. Not a working system. By Michael Cerpa.">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A1610;--ink:#EAEFE9;--ink-soft:#9DB0A4;--accent:#6FBF93;
+  --panel:#0E1F17;--cream:#F2EDE1;--on-cream:#16231D;--on-cream-soft:#5E6B62;--accent-deep:#2F6B49;
+  --rule-d:rgba(255,255,255,.10);--rule-c:rgba(0,0,0,.10);
+  --hi:#2F6B49;--mid:#B07D1E;--lo:#B0463E; --hi-bg:#E4F0E8;--mid-bg:#F6ECD6;--lo-bg:#F6DEDB;
+  --serif:'Fraunces',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;max-width:100%;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:clip}
+h1,h2,h3,p,.field .v,.msg,.row{overflow-wrap:break-word}
+.parse>*,.stats>*,.twocol>*{min-width:0}
+.wrap{max-width:1040px;margin:0 auto;padding:0 clamp(22px,5vw,64px)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.badge{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--ink-soft);background:var(--panel);border:1px solid var(--rule-d);padding:5px 12px;border-radius:20px;margin-bottom:20px}
+
+.hero{min-height:62vh;display:flex;flex-direction:column;justify-content:center;position:relative;padding-top:64px;padding-bottom:8px}
+.hero h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,6vw,60px);line-height:1.02;letter-spacing:-.02em;margin-top:14px}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero .sub{margin-top:18px;max-width:54ch;font-size:16.5px;color:var(--ink-soft)}
+
+section.block{padding-top:48px;padding-bottom:48px;border-top:1px solid var(--rule-d)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.block h2{font-family:var(--serif);font-weight:500;font-size:25px;letter-spacing:-.01em}
+.block .lead{color:var(--ink-soft);font-size:14.5px;max-width:60ch;margin-top:6px}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s,transform .6s}
+.reveal.in{opacity:1;transform:none}
+
+/* toggle */
+.toggle{display:inline-flex;gap:5px;background:var(--panel);border:1px solid var(--rule-d);border-radius:11px;padding:5px;margin:6px 0 4px;flex-wrap:wrap}
+.tog{font-family:var(--mono);font-size:12px;border:0;background:transparent;color:var(--ink-soft);padding:8px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tog.on{background:var(--accent);color:#06140d;font-weight:500}
+.panel{display:none;margin-top:22px} .panel.on{display:block}
+
+/* example tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{font-family:var(--mono);font-size:11.5px;border:1px solid var(--rule-d);background:transparent;color:var(--ink-soft);padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.tab.on{border-color:var(--accent);color:var(--ink)}
+.tab .d{width:7px;height:7px;border-radius:50%}
+
+/* parse: message | row */
+.parse{display:grid;grid-template-columns:1fr 1.15fr;gap:16px;align-items:start}
+@media(max-width:740px){.parse{grid-template-columns:1fr}}
+.card{background:var(--cream);color:var(--on-cream);border-radius:12px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.card .hd{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--rule-c);font-family:var(--mono);font-size:11px;color:var(--on-cream-soft)}
+.card .hd .chip{background:var(--accent-deep);color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;letter-spacing:.04em}
+.msg{padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--on-cream);white-space:pre-wrap}
+
+.status{padding:10px 15px;font-family:var(--mono);font-size:11.5px;border-bottom:1px solid var(--rule-c)}
+.status.ok{color:var(--hi);background:var(--hi-bg)} .status.mid{color:var(--mid);background:var(--mid-bg)} .status.lo{color:var(--lo);background:var(--lo-bg)}
+.field{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:11px 15px;border-bottom:1px solid var(--rule-c)}
+.field:last-of-type{border-bottom:0}
+.field .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--on-cream-soft);grid-column:1}
+.field .c{grid-column:2;grid-row:1 / span 2;align-self:center;font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;height:fit-content}
+.field .v{grid-column:1;font-size:14px;color:var(--on-cream)}
+.field .p{grid-column:1;font-family:var(--mono);font-size:10.5px;color:var(--on-cream-soft);margin-top:1px}
+.c.hi{background:var(--hi-bg);color:var(--hi)} .c.mid{background:var(--mid-bg);color:var(--mid)} .c.lo{background:var(--lo-bg);color:var(--lo)}
+.opts{grid-column:1;margin-top:5px;display:flex;flex-wrap:wrap;gap:6px}
+.opt{font-family:var(--mono);font-size:11px;background:var(--mid-bg);color:var(--mid);border-radius:6px;padding:3px 8px}
+.writes{display:flex;align-items:center;gap:14px;padding:11px 15px;border-top:1px solid var(--rule-c);font-family:var(--mono);font-size:11px;color:var(--on-cream-soft);flex-wrap:wrap}
+.writes b{color:var(--accent-deep)}
+.acts{display:flex;gap:8px;padding:0 15px 14px}
+.act{flex:1;font-family:var(--mono);font-size:11.5px;padding:8px;border-radius:7px;border:1px solid var(--rule-c);background:transparent;color:var(--on-cream-soft);text-align:center}
+.act.go{background:var(--accent-deep);color:#fff;border-color:var(--accent-deep)}
+
+/* UC2 dashboard */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:740px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--panel);border:1px solid var(--rule-d);border-radius:11px;padding:15px}
+.stat .n{font-family:var(--serif);font-size:30px;font-weight:500;line-height:1}
+.stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin-top:7px}
+.stat.flag .n{color:var(--accent)} .stat.exc .n{color:var(--lo)}
+.tbl{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px}
+.tbl th{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule-d);font-weight:400}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--rule-d);color:var(--ink-soft);text-align:right}
+.tbl td:first-child{color:var(--ink)}
+.tbl .fl{color:var(--accent)}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+@media(max-width:740px){.twocol{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--rule-d);border-radius:11px;padding:16px}
+.box h3{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.row{display:flex;justify-content:space-between;font-size:13.5px;color:var(--ink-soft);padding:6px 0;border-bottom:1px solid var(--rule-d)}
+.row:last-child{border-bottom:0} .row b{color:var(--ink);font-weight:500}
+.row.big b{color:var(--accent);font-size:15px}
+
+footer{border-top:1px solid var(--rule-d);padding-top:30px;padding-bottom:30px;margin-top:24px}
+footer .fl{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);opacity:.75}
+.tog:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:560px){.tbl{font-size:11.5px}.tbl th,.tbl td{padding:7px 6px}}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <div class="badge">Concept mockup · not a working system</div>
+  <div class="eyebrow">Forward Deployed case study</div>
+  <h1>Messy in. <em>Structured</em> out.</h1>
+  <p class="sub">A parser turns any message into a structured row, scores every field, and flags only the doubtful ones for a human. One engine; two adapters.</p>
+</header>
+
+<main>
+<section class="block wrap">
+  <div class="reveal">
+    <div class="toggle" role="tablist">
+      <button class="tog on" data-p="uc1">UC1 · Scheduling intake</button>
+      <button class="tog" data-p="uc2">UC2 · Acquisition integration</button>
+    </div>
+  </div>
+
+  <!-- UC1 -->
+  <div class="panel on" id="uc1">
+    <div class="reveal">
+      <div class="kicker">Text in → row out</div>
+      <h2>Email, voicemail, or text → one structured row</h2>
+      <p class="lead">Pick an input. Cleaner messages clear the bar and auto-write; messy ones flag the weak fields for a scheduler. The customer never sees this.</p>
+    </div>
+    <div class="reveal">
+      <div class="tabs" id="uc1tabs"></div>
+      <div class="parse">
+        <div class="card" id="uc1msg"></div>
+        <div class="card" id="uc1row"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UC2 -->
+  <div class="panel" id="uc2">
+    <div class="reveal">
+      <div class="kicker">Paper in → records out</div>
+      <h2>Acquired paper → the integration team's morning view</h2>
+      <p class="lead">Scanned overnight, read by a vision model. Clean records auto-write; low-confidence or conflicting ones wait for review. Typed-vs-handwritten conflicts are surfaced, never guessed.</p>
+    </div>
+    <div class="reveal">
+      <div class="stats" id="uc2stats"></div>
+      <table class="tbl" id="uc2tbl"></table>
+      <div class="twocol">
+        <div class="box" id="uc2time"></div>
+        <div class="box" id="uc2conflict"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap"><div class="fl">Forward Deployed case study by Michael Cerpa · substance real, identifiers sanitized · illustrative</div></footer>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const cls=c=>c>=90?'hi':c>=70?'mid':'lo';
+
+const UC1={
+  email:{tab:'Clean email',dot:'var(--hi)',kind:'EMAIL',meta:'j.alvarez@gmail.com · 8:47 AM',
+    body:"Hi there,\nI'd like attic insulation installed at our house, 1247 Maple St.\nWe're free Thursday May 21 between 9am and noon. Heads up - golden\nretriever in the backyard, use the side gate (code 4412).\nReach me at (559) 555-2018. - Julia A.",
+    status:{c:'ok',t:'All fields cleared → auto-write'},
+    fields:[
+      {k:'Customer',v:'Julia Alvarez',p:'sign-off',c:98},
+      {k:'Service address',v:'1247 Maple St',p:'line 2',c:97},
+      {k:'Date',v:'Thu, May 21, 2026',p:'"Thursday May 21"',c:96},
+      {k:'Time window',v:'9:00 AM – 12:00 PM',p:'"between 9am and noon"',c:95},
+      {k:'Job type',v:'Insulation install — attic',c:94},
+      {k:'Notes',v:'Dog on site · side gate, code 4412',c:92},
+      {k:'Phone',v:'(559) 555-2018',c:99}
+    ]},
+  voicemail:{tab:'Voicemail',dot:'var(--mid)',kind:'VOICEMAIL',meta:'(559) 555-7732 · 0:42',
+    body:"\"...this is Dale Henderson. Had y'all out about a year back, got some\n[unclear] in the crawlspace, now it's sagging. Hoping someone can take\na look. House is at 88 [unclear] Road. Any time Friday the 22nd,\nafternoon's better. Number's the one I'm calling from.\"",
+    status:{c:'mid',t:'2 fields low → scheduler review'},
+    fields:[
+      {k:'Customer',v:'Dale Henderson',c:94},
+      {k:'Service address',v:'88 [unclear] Road',p:'street garbled in transcript',c:62},
+      {k:'Date',v:'Fri, May 22, 2026',c:91},
+      {k:'Time window',v:'12:00 – 5:00 PM (afternoon)',p:'window inferred',c:74},
+      {k:'Job type',v:'Repair — crawlspace insulation',c:88},
+      {k:'Notes',v:'Existing customer (~1 yr); material sagging',c:79},
+      {k:'Phone',v:'(559) 555-7732',p:'caller ID',c:99}
+    ]},
+  sms:{tab:'Ambiguous SMS',dot:'var(--lo)',kind:'SMS',meta:'(559) 555-3091 · 7:12 PM',
+    body:"hey can yall come out for an estimate next tues or the one after,\nmorning if poss. its for the new build off rd 156. - marcus",
+    status:{c:'lo',t:'Needs human review — do not auto-write'},
+    fields:[
+      {k:'Customer',v:'Marcus [no last name]',c:68},
+      {k:'Service address',v:'New build off Rd 156 [city missing]',p:'no number, no city',c:41},
+      {k:'Date',v:'Ambiguous — two candidates',p:'"next tues or the one after"',c:52,opts:['Tue May 19','Tue May 26']},
+      {k:'Time window',v:'7:00 AM – 12:00 PM (morning)',c:76},
+      {k:'Job type',v:'Estimate — new construction',c:90},
+      {k:'Notes',v:'Confirm address + access with customer',c:72},
+      {k:'Phone',v:'(559) 555-3091',p:'sender ID',c:99}
+    ]}
+};
+
+function renderUC1(key){
+  const e=UC1[key];
+  $('#uc1msg').innerHTML=`<div class="hd"><span class="chip">${e.kind}</span>${e.meta}</div><div class="msg">${e.body}</div>`;
+  let f=`<div class="status ${e.status.c}">${e.status.t}</div>`;
+  e.fields.forEach(x=>{
+    f+=`<div class="field"><div class="k">${x.k}</div><div class="v">${x.v}</div>`+
+       (x.opts?`<div class="opts">${x.opts.map(o=>`<span class="opt">${o}</span>`).join('')}</div>`:'')+
+       (x.p?`<div class="p">${x.p}</div>`:'')+
+       `<div class="c ${cls(x.c)}">${x.c}%</div></div>`;
+  });
+  f+=`<div class="writes"><span>writes to</span><b>Sheets</b><b>job system</b></div>
+      <div class="acts"><span class="act go">Approve & Write</span><span class="act">Edit</span><span class="act">Reject</span></div>`;
+  $('#uc1row').innerHTML=f;
+  $$('#uc1tabs .tab').forEach(t=>t.classList.toggle('on',t.dataset.k===key));
+}
+$('#uc1tabs').innerHTML=Object.keys(UC1).map((k,i)=>`<button class="tab${i?'':' on'}" data-k="${k}"><span class="d" style="background:${UC1[k].dot}"></span>${UC1[k].tab}</button>`).join('');
+$$('#uc1tabs .tab').forEach(t=>t.onclick=()=>renderUC1(t.dataset.k));
+renderUC1('email');
+
+// UC2
+const ST=[['247','Files processed',''],['3,418','Records extracted',''],['85%','Auto-processed',''],['527','Flagged for review','flag'],['12','Critical exceptions','exc']];
+$('#uc2stats').innerHTML=ST.map(s=>`<div class="stat ${s[2]}"><div class="n">${s[0]}</div><div class="l">${s[1]}</div></div>`).join('');
+const ROWS=[['Customer lists',12,847,'92%',12],['Service contracts',38,'1,204','87%',184],['Vendor agreements',91,612,'89%',47],['Employee records',47,188,'94%',6],['Job histories',59,567,'81%',278]];
+$('#uc2tbl').innerHTML=`<thead><tr><th>Document type</th><th>Files</th><th>Records</th><th>Avg conf.</th><th>Flagged</th></tr></thead><tbody>`+
+  ROWS.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td class="fl">${r[4]}</td></tr>`).join('')+`</tbody>`;
+$('#uc2time').innerHTML=`<h3>Time saved · this acquisition</h3>
+  <div class="row"><span>Manual data entry</span><b>14 days</b></div>
+  <div class="row"><span>Review (this run)</span><b>1 day</b></div>
+  <div class="row big"><span>Capacity returned</span><b>13 days</b></div>
+  <div class="row"><span>Annualized (~a dozen/yr)</span><b>~143 days</b></div>`;
+$('#uc2conflict').innerHTML=`<h3>Conflict — surfaced, not guessed</h3>
+  <div class="row"><span>Record</span><b>Pinecrest HOA</b></div>
+  <div class="row"><span>Typed column</span><b>Active · Monthly</b></div>
+  <div class="row"><span>Handwritten margin</span><b>"bi-monthly · don't call before 9am"</b></div>
+  <div class="row big"><span>Routed to</span><b>Integration review</b></div>`;
+
+// toggle
+$$('.tog').forEach(t=>t.onclick=()=>{
+  $$('.tog').forEach(x=>x.classList.remove('on')); t.classList.add('on');
+  $$('.panel').forEach(p=>p.classList.toggle('on',p.id===t.dataset.p));
+  document.getElementById(t.dataset.p).querySelectorAll('.reveal').forEach(r=>r.classList.add('in'));
+});
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.1});
+$$('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
