@@ -14,11 +14,11 @@ review → nightly eval loop — and a different adapter sits in front of it per
 Flip the adapter toggle and watch the same engine handle a different input.
 
 ## Real vs. simulated
-- **Real:** the workflows and the analysis - from two separate 40-minute interviews with operators who
+- **Real:** the workflows and the analysis — from two separate 40-minute interviews with operators who
   have 35+ years inside the company, plus three summers I worked in its branches.
 - **Genericized:** the installer is a real company, deliberately unnamed; anything that would identify
-  it - figures, system names, places, people - is removed or rounded.
-- **Illustrative:** no engagement happened - this is a worked example - and there is no live AI; the
+  it — figures, system names, places, people — is removed or rounded.
+- **Illustrative:** no engagement happened — this is a worked example — and there is no live AI; the
   demo plays back pre-written results to show how the work would flow.
 
 ## Build
