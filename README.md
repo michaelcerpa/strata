@@ -1,6 +1,6 @@
 # Strata
 
-**One engine, two adapters — a Forward Deployed case study.**
+**One engine, two adapters — a worked Forward Deployed scenario.**
 
 Strata is an interactive walkthrough of a GenAI roadmap that turns unstructured input into structured
 records, with a human on *only* the uncertain cases. One extraction engine is built once — ingest →
@@ -14,10 +14,12 @@ review → nightly eval loop — and a different adapter sits in front of it per
 Flip the adapter toggle and watch the same engine handle a different input.
 
 ## Real vs. simulated
-- **Real:** the workflow, the architecture, the operator interviews, and the analysis behind it.
-- **Sanitized:** the client, people, internal systems, and exact financials are genericized — no real company
-  or product is named.
-- **Illustrative:** there is no live AI here; the traces are scripted to show the routing.
+- **Real:** the workflows and the analysis - from two separate 40-minute interviews with operators who
+  have 35+ years inside the company, plus three summers I worked in its branches.
+- **Genericized:** the installer is a real company, deliberately unnamed; anything that would identify
+  it - figures, system names, places, people - is removed or rounded.
+- **Illustrative:** no engagement happened - this is a worked example - and there is no live AI; the
+  demo plays back pre-written results to show how the work would flow.
 
 ## Build
 Vanilla HTML/CSS/JS — a single self-contained `index.html`, no build step, no backend. Deployed static to
@@ -25,4 +27,4 @@ Vercel. Shares the portfolio's design system (dark forest, cream nodes, Fraunces
 for cohesion when embedded.
 
 ---
-Forward Deployed case study by Michael Cerpa.
+A worked Forward Deployed scenario by Michael Cerpa.
